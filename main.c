@@ -1,30 +1,31 @@
 #include "shell.h"
 
 /**
- * prompt - Displays the shell prompt if in interactive mode
+ * prompt - Displays prompt if shell is in interactive mode
  *
  * Return: Nothing.
  */
 void prompt(void)
 {
 	if (isatty(STDIN_FILENO))
-		write(STDOUT_FILENO, "($) ", 4);
+		write(STDOUT_FILENO, "#cisfun$ ", 9);
 }
 
 /**
- * execute_cmd - Executes a command using fork and execve
- * @args: Array of string arguments
- * @prog_name: Name of the program executable (argv[0])
+ * execute_cmd - Executes a single command using fork and execve
+ * @cmd: Command path string
+ * @prog_name: Name of the shell executable (argv[0])
  *
  * Return: Nothing.
  */
-void execute_cmd(char **args, char *prog_name)
+void execute_cmd(char *cmd, char *prog_name)
 {
 	pid_t child_pid;
 	int status;
+	char *args[2];
 
-	if (args == NULL || args[0] == NULL)
-		return;
+	args[0] = cmd;
+	args[1] = NULL;
 
 	child_pid = fork();
 	if (child_pid == -1)
@@ -37,8 +38,8 @@ void execute_cmd(char **args, char *prog_name)
 	{
 		if (execve(args[0], args, environ) == -1)
 		{
-			fprintf(stderr, "%s: 1: %s: not found\n", prog_name, args[0]);
-			exit(127);
+			perror(prog_name);
+			exit(1);
 		}
 	}
 	else
@@ -48,7 +49,7 @@ void execute_cmd(char **args, char *prog_name)
 }
 
 /**
- * main - Entry point for the simple shell
+ * main - Entry point for simple_shell
  * @ac: Argument count (unused)
  * @av: Argument vector
  *
@@ -59,7 +60,6 @@ int main(int ac, char **av)
 	char *line = NULL;
 	size_t len = 0;
 	ssize_t nread;
-	char **args;
 	(void)ac;
 
 	while (1)
@@ -75,11 +75,13 @@ int main(int ac, char **av)
 			exit(0);
 		}
 
-		args = parse_line(line);
-		if (args != NULL && args[0] != NULL)
-			execute_cmd(args, av[0]);
+		if (nread > 0 && line[nread - 1] == '\n')
+			line[nread - 1] = '\0';
 
-		free(args);
+		if (line[0] == '\0')
+			continue;
+
+		execute_cmd(line, av[0]);
 	}
 
 	free(line);
