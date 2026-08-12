@@ -1,7 +1,9 @@
 #include "shell.h"
 
 /**
- * prompt - Affiche le prompt si le shell est en mode interactif
+ * prompt - Displays the shell prompt if in interactive mode
+ *
+ * Return: Nothing.
  */
 void prompt(void)
 {
@@ -10,9 +12,11 @@ void prompt(void)
 }
 
 /**
- * execute_cmd - Exécute une commande donnée en argument
- * @args: Tableau d'arguments (ex: {"/bin/ls", NULL})
- * @prog_name: Nom du programme principal (argv[0])
+ * execute_cmd - Executes a command using fork and execve
+ * @args: Array of string arguments
+ * @prog_name: Name of the program executable (argv[0])
+ *
+ * Return: Nothing.
  */
 void execute_cmd(char **args, char *prog_name)
 {
@@ -44,18 +48,18 @@ void execute_cmd(char **args, char *prog_name)
 }
 
 /**
- * main - Point d'entrée principal du simple shell
- * @ac: Nombre d'arguments
- * @av: Tableau des arguments
+ * main - Entry point for the simple shell
+ * @ac: Argument count (unused)
+ * @av: Argument vector
  *
- * Return: Toujours 0
+ * Return: Always 0 on success.
  */
 int main(int ac, char **av)
 {
 	char *line = NULL;
 	size_t len = 0;
 	ssize_t nread;
-	char *args[2];
+	char **args;
 	(void)ac;
 
 	while (1)
@@ -63,7 +67,6 @@ int main(int ac, char **av)
 		prompt();
 		nread = getline(&line, &len, stdin);
 
-		/* Gestion de EOF (Ctrl+D) */
 		if (nread == -1)
 		{
 			if (isatty(STDIN_FILENO))
@@ -72,18 +75,11 @@ int main(int ac, char **av)
 			exit(0);
 		}
 
-		/* Supprimer le saut de ligne \n en fin de chaîne */
-		if (nread > 0 && line[nread - 1] == '\n')
-			line[nread - 1] = '\0';
+		args = parse_line(line);
+		if (args != NULL && args[0] != NULL)
+			execute_cmd(args, av[0]);
 
-		/* Ignorer les lignes vides */
-		if (line[0] == '\0')
-			continue;
-
-		args[0] = line;
-		args[1] = NULL;
-
-		execute_cmd(args, av[0]);
+		free(args);
 	}
 
 	free(line);
